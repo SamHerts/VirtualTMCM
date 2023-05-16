@@ -1,16 +1,15 @@
-from TMCL.tmcm import Trinamic5160
+from TMCL.tmcm import Trinamic6214
 from time import sleep
 from threading import Thread
 
 tick_speed = 100
 is_running = False
 
-motor_array = [Trinamic5160(tick_speed, 0), Trinamic5160(tick_speed, 1)]
+trinamic_6214 = Trinamic6214(tick_speed, 1)
 
 
 def comm_loop():
     global is_running
-    global motor_array
     while is_running:
         command = input("Enter a command (move <motor> <distance>, gp <motor>, or exit): ")
         parts = command.split()
@@ -24,7 +23,7 @@ def comm_loop():
 
             try:
                 distance = int(parts[2])
-                motor_array[int(parts[1])].move_to_position(distance)
+                trinamic_6214.motor_array[int(parts[1])].move_to_position(distance)
                 print("Moved motor by", distance)
             except ValueError:
                 print("Invalid distance. Please provide an integer.")
@@ -32,7 +31,7 @@ def comm_loop():
             if len(parts) < 2:
                 print("Invalid command. Please provide a motor.")
                 continue
-            print("Current position:", motor_array[int(parts[1])].get_position())
+            print("Current position:", trinamic_6214.motor_array[int(parts[1])].get_position())
         elif parts[0] == 'exit':
             print("Exiting...")
             is_running = False
@@ -42,14 +41,11 @@ def comm_loop():
 
 
 def main():
-    global motor_array
-    motor_array[0].set_acceleration(2000)
-    motor_array[0].set_max_velocity(500)
-
-    motor_array[1].set_acceleration(2000)
-    motor_array[1].set_max_velocity(500)
-    print("Initial position 0:", motor_array[0].get_position())
-    print("Initial position 1:", motor_array[0].get_position())
+    global trinamic_6214
+    for motor in trinamic_6214.motor_array:
+        motor.set_acceleration(200)
+        motor.set_max_velocity(100)
+        print("Initial position:", motor.get_position())
 
     global is_running
     is_running = True
@@ -57,8 +53,7 @@ def main():
     x.start()
 
     while is_running:
-        for motor in motor_array:
-            motor.update()
+        trinamic_6214.update()
         sleep(1 / tick_speed)
 
     x.join()
