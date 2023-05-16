@@ -64,20 +64,11 @@ class Trinamic5160:
         else:
             raise ValueError("Invalid parameter.")
 
-    def move_to_position(self, position):
-        self.set_parameter(TMCLParameter.AXIS_PARAM_TARGET_POSITION, position)
+    def move_to_position(self, target_position):
+        self.set_parameter(TMCLParameter.AXIS_PARAM_TARGET_POSITION, target_position)
         actual_position = self.get_parameter(TMCLParameter.AXIS_PARAM_ACTUAL_POSITION)
-        target_position = self.get_parameter(TMCLParameter.AXIS_PARAM_TARGET_POSITION)
+
         self.direction_is_forward = True if (target_position - actual_position) >= 0 else False
-
-    def get_position(self):
-        return self.get_parameter(TMCLParameter.AXIS_PARAM_ACTUAL_POSITION)
-
-    def set_acceleration(self, accel):
-        self.set_parameter(TMCLParameter.AXIS_PARAM_ACCELERATION_A1, accel)
-
-    def set_max_velocity(self, velocity):
-        self.set_parameter(TMCLParameter.AXIS_PARAM_MAXIMUM_POSITIONING_SPEED, velocity)
 
     def update(self):
         # Update the position
@@ -90,7 +81,7 @@ class Trinamic5160:
         direction_sign = 1 if self.direction_is_forward else -1
 
         if target_position != actual_position:
-            if abs(actual_velocity) < maximum_velocity:
+            if abs(actual_velocity) <= maximum_velocity:
                 actual_velocity = actual_velocity + ((acceleration / self.tick_speed) * direction_sign)
                 if abs(actual_velocity) > maximum_velocity:
                     actual_velocity = maximum_velocity * direction_sign
@@ -99,12 +90,14 @@ class Trinamic5160:
 
             self.set_parameter(TMCLParameter.AXIS_PARAM_POSITION_REACHED_FLAG, 0)
             actual_position = actual_position + actual_velocity
+            # Check if we go past
             if self.direction_is_forward:
                 if actual_position > target_position:
                     actual_position = target_position
             else:
                 if actual_position < target_position:
                     actual_position = target_position
+
             self.set_parameter(TMCLParameter.AXIS_PARAM_ACTUAL_POSITION, actual_position)
 
         else:
@@ -115,9 +108,22 @@ class Trinamic5160:
 class Trinamic6214:
     def __init__(self, tick_speed, motor_count):
         self.motor_array = [Trinamic5160(tick_speed, idx) for idx in range(motor_count)]
+        self.motor_count = motor_count
 
     def move_to_position(self, idx, position):
         self.motor_array[idx].move_to_position(position)
+
+    def motor_stop(self, idx):
+        self.motor_array[idx].set_parameter(TMCLParameter.AXIS_PARAM_ACTUAL_SPEED, 0)
+
+    def set_max_velocity(self, idx, velocity):
+        self.motor_array[idx].set_parameter(TMCLParameter.AXIS_PARAM_MAXIMUM_POSITIONING_SPEED, velocity)
+
+    def set_acceleration(self, idx, accel):
+        self.motor_array[idx].set_parameter(TMCLParameter.AXIS_PARAM_ACCELERATION_A1, accel)
+
+    def get_position(self, idx):
+        return self.motor_array[idx].get_parameter(TMCLParameter.AXIS_PARAM_ACTUAL_POSITION)
 
     def update(self):
         for motor in self.motor_array:

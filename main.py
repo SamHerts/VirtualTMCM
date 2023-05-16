@@ -5,7 +5,7 @@ from threading import Thread
 tick_speed = 100
 is_running = False
 
-trinamic_6214 = Trinamic6214(tick_speed, 1)
+trinamic_6214 = Trinamic6214(tick_speed, 3)
 
 
 def comm_loop():
@@ -23,7 +23,7 @@ def comm_loop():
 
             try:
                 distance = int(parts[2])
-                trinamic_6214.motor_array[int(parts[1])].move_to_position(distance)
+                trinamic_6214.move_to_position(int(parts[1]), distance)
                 print("Moved motor by", distance)
             except ValueError:
                 print("Invalid distance. Please provide an integer.")
@@ -31,7 +31,7 @@ def comm_loop():
             if len(parts) < 2:
                 print("Invalid command. Please provide a motor.")
                 continue
-            print("Current position:", trinamic_6214.motor_array[int(parts[1])].get_position())
+            print("Current position:", trinamic_6214.get_position(int(parts[1])))
         elif parts[0] == 'exit':
             print("Exiting...")
             is_running = False
@@ -42,10 +42,10 @@ def comm_loop():
 
 def main():
     global trinamic_6214
-    for motor in trinamic_6214.motor_array:
-        motor.set_acceleration(200)
-        motor.set_max_velocity(100)
-        print("Initial position:", motor.get_position())
+    for idx in range(trinamic_6214.motor_count):
+        trinamic_6214.set_acceleration(idx, 200)
+        trinamic_6214.set_max_velocity(idx, 100)
+        print("Initial position:", trinamic_6214.get_position(idx))
 
     global is_running
     is_running = True
