@@ -37,9 +37,8 @@ def comm_loop():
 def main():
     global trinamic_6214
     for idx in range(trinamic_6214.motor_count):
-        trinamic_6214.set_acceleration(idx, 200)
-        trinamic_6214.set_max_velocity(idx, 100)
-        print("Initial position:", trinamic_6214.get_position(idx))
+        trinamic_6214.set_axis_parameter(TMCLParameter.ACCELERATION_A1, idx, 200)
+        trinamic_6214.set_axis_parameter(TMCLParameter.MAXIMUM_POSITIONING_SPEED, idx, 100)
 
     global is_running
     is_running = True
