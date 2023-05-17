@@ -21,36 +21,28 @@ class Trinamic5160:
             TMCLParameter.AXIS_PARAM_RAMP_WAIT_TIME: None,
             TMCLParameter.AXIS_PARAM_SERIAL_HEARTBEAT: None,
             TMCLParameter.AXIS_PARAM_RELATIVE_POSITIONING_OPTION: None,
-            TMCLParameter.AXIS_PARAM_MICROSTEP_RESOLUTION: None,
+            TMCLParameter.AXIS_PARAM_MICROSTEP_RESOLUTION: 8,
             TMCLParameter.AXIS_PARAM_CHOPPER_OFF_TIME: None,
             TMCLParameter.AXIS_PARAM_LATCHED_POSITION: None,
             TMCLParameter.AXIS_PARAM_LATCHED_ENCODER: None,
-            TMCLParameter.AXIS_PARAM_ENCODER_MODE: None,
+            TMCLParameter.AXIS_PARAM_ENCODER_MODE: 0,
             TMCLParameter.AXIS_PARAM_ACTUAL_LOAD_VALUE: None,
             TMCLParameter.AXIS_PARAM_EXTENDED_ERROR_FLAGS: None,
             TMCLParameter.AXIS_PARAM_MOTOR_DRIVER_ERROR_FLAGS: None,
-            TMCLParameter.AXIS_PARAM_ENCODER_POSITION: None,
-            TMCLParameter.AXIS_PARAM_ENCODER_RESOLUTION: None,
-            TMCLParameter.AXIS_PARAM_ENCODER_DEVIATION: None,
+            TMCLParameter.ENCODER_POSITION: 0,
+            TMCLParameter.AXIS_PARAM_ENCODER_RESOLUTION: 3600,
+            TMCLParameter.AXIS_PARAM_ENCODER_DEVIATION: 0,
             TMCLParameter.AXIS_PARAM_EXTERNAL_ENCODER_POSITION: None,
             TMCLParameter.AXIS_PARAM_EXTERNAL_ENCODER_RESOLUTION: None,
             TMCLParameter.AXIS_PARAM_EXTERNAL_ENCODER_DEVIATION: None,
             TMCLParameter.AXIS_PARAM_REVERSE_SHAFT: None,
         }
 
-        self.status = TMCLStatus()
-        self.reply = TMCLReply(0, 0, 0, 0, 0)
-        self.request = TMCLRequest(0, 0, 0, 0, 0)
         self.tick_speed = tick_speed
         self.direction_is_forward = True
 
     def __str__(self):
-        return "TMC5160.{0} - Dir:{1}, AP:{2}, AV:{3}".format(
-            self.identity,
-            self.direction_is_forward,
-            self.parameters[TMCLParameter.AXIS_PARAM_ACTUAL_POSITION],
-            self.parameters[TMCLParameter.AXIS_PARAM_ACTUAL_SPEED],
-        )
+        return f"TMC5160.{self.identity}"
 
     def set_parameter(self, param: TMCLParameter, value: int) -> None:
         if param in self.parameters:
