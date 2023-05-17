@@ -5,17 +5,17 @@ class Trinamic5160:
     def __init__(self, tick_speed, identity):
         self.identity = identity
         self.parameters = {
-            TMCLParameter.AXIS_PARAM_TARGET_POSITION: 0,
-            TMCLParameter.AXIS_PARAM_ACTUAL_POSITION: 0,
-            TMCLParameter.AXIS_PARAM_ACTUAL_SPEED: 0,
-            TMCLParameter.AXIS_PARAM_MAXIMUM_POSITIONING_SPEED: None,
-            TMCLParameter.AXIS_PARAM_MAXIMUM_ACCELERATION: None,
-            TMCLParameter.AXIS_PARAM_ABSOLUTE_MAX_CURRENT: None,
-            TMCLParameter.AXIS_PARAM_STANDBY_CURRENT: None,
-            TMCLParameter.AXIS_PARAM_POSITION_REACHED_FLAG: None,
-            TMCLParameter.AXIS_PARAM_ACCELERATION_A1: None,
-            TMCLParameter.AXIS_PARAM_VELOCITY_V1: None,
-            TMCLParameter.AXIS_PARAM_MAXIMUM_DECELERATION: None,
+            TMCLParameter.TARGET_POSITION: 0,
+            TMCLParameter.ACTUAL_POSITION: 0,
+            TMCLParameter.ACTUAL_SPEED: 0,
+            TMCLParameter.MAXIMUM_POSITIONING_SPEED: None,
+            TMCLParameter.MAXIMUM_ACCELERATION: None,
+            TMCLParameter.ABSOLUTE_MAX_CURRENT: None,
+            TMCLParameter.STANDBY_CURRENT: None,
+            TMCLParameter.POSITION_REACHED_FLAG: None,
+            TMCLParameter.ACCELERATION_A1: None,
+            TMCLParameter.VELOCITY_V1: None,
+            TMCLParameter.MAXIMUM_DECELERATION: None,
             TMCLParameter.AXIS_PARAM_VELOCITY_VSTART: None,
             TMCLParameter.AXIS_PARAM_VELOCITY_VSTOP: None,
             TMCLParameter.AXIS_PARAM_RAMP_WAIT_TIME: None,
@@ -65,18 +65,18 @@ class Trinamic5160:
             raise ValueError("Invalid parameter.")
 
     def move_to_position(self, target_position):
-        self.set_parameter(TMCLParameter.AXIS_PARAM_TARGET_POSITION, target_position)
-        actual_position = self.get_parameter(TMCLParameter.AXIS_PARAM_ACTUAL_POSITION)
+        self.set_parameter(TMCLParameter.TARGET_POSITION, target_position)
+        actual_position = self.get_parameter(TMCLParameter.ACTUAL_POSITION)
 
         self.direction_is_forward = True if (target_position - actual_position) >= 0 else False
 
     def update(self):
         # Update the position
-        actual_position = self.get_parameter(TMCLParameter.AXIS_PARAM_ACTUAL_POSITION)
-        actual_velocity = self.get_parameter(TMCLParameter.AXIS_PARAM_ACTUAL_SPEED)
-        target_position = self.get_parameter(TMCLParameter.AXIS_PARAM_TARGET_POSITION)
-        maximum_velocity = self.get_parameter(TMCLParameter.AXIS_PARAM_MAXIMUM_POSITIONING_SPEED)
-        acceleration = self.get_parameter(TMCLParameter.AXIS_PARAM_ACCELERATION_A1)
+        actual_position = self.get_parameter(TMCLParameter.ACTUAL_POSITION)
+        actual_velocity = self.get_parameter(TMCLParameter.ACTUAL_SPEED)
+        target_position = self.get_parameter(TMCLParameter.TARGET_POSITION)
+        maximum_velocity = self.get_parameter(TMCLParameter.MAXIMUM_POSITIONING_SPEED)
+        acceleration = self.get_parameter(TMCLParameter.ACCELERATION_A1)
 
         direction_sign = 1 if self.direction_is_forward else -1
 
@@ -86,9 +86,9 @@ class Trinamic5160:
                 if abs(actual_velocity) > maximum_velocity:
                     actual_velocity = maximum_velocity * direction_sign
 
-                self.set_parameter(TMCLParameter.AXIS_PARAM_ACTUAL_SPEED, actual_velocity)
+                self.set_parameter(TMCLParameter.ACTUAL_SPEED, int(actual_velocity))
 
-            self.set_parameter(TMCLParameter.AXIS_PARAM_POSITION_REACHED_FLAG, 0)
+            self.set_parameter(TMCLParameter.POSITION_REACHED_FLAG, 0)
             actual_position = actual_position + actual_velocity
             # Check if we go past
             if self.direction_is_forward:
@@ -98,11 +98,12 @@ class Trinamic5160:
                 if actual_position < target_position:
                     actual_position = target_position
 
-            self.set_parameter(TMCLParameter.AXIS_PARAM_ACTUAL_POSITION, actual_position)
+            self.set_parameter(TMCLParameter.ACTUAL_POSITION, int(actual_position))
+            self.set_parameter(TMCLParameter.ENCODER_POSITION, int(actual_position))
 
         else:
-            self.set_parameter(TMCLParameter.AXIS_PARAM_POSITION_REACHED_FLAG, 1)
-            self.set_parameter(TMCLParameter.AXIS_PARAM_ACTUAL_SPEED, 0)
+            self.set_parameter(TMCLParameter.POSITION_REACHED_FLAG, 1)
+            self.set_parameter(TMCLParameter.ACTUAL_SPEED, 0)
 
 
 class Trinamic6214:
