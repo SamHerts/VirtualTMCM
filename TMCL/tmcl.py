@@ -121,7 +121,7 @@ class TMCLParameter:
     AXIS_PARAM_ACTUAL_LOAD_VALUE = 206
     AXIS_PARAM_EXTENDED_ERROR_FLAGS = 207
     AXIS_PARAM_MOTOR_DRIVER_ERROR_FLAGS = 208
-    AXIS_PARAM_ENCODER_POSITION = 209
+    ENCODER_POSITION = 209
     AXIS_PARAM_ENCODER_RESOLUTION = 210
     AXIS_PARAM_ENCODER_DEVIATION = 212
     AXIS_PARAM_EXTERNAL_ENCODER_POSITION = 216
@@ -214,7 +214,7 @@ class TMCLRequest:
                            self.commandType, self.motorBank, self.value, self.checksum)
 
     def __str__(self):
-        return "TMCL_Request: {0:02X},{1:02X},{2:02X},{3:02X},{4:08X},{5:02X}".format(
+        return "TMCL_Request: {0:02X},{1:02X},{2:02X},{3:02X}, {4}, {5:02X}".format(
             self.moduleAddress,
             self.command,
             self.commandType,
@@ -254,7 +254,7 @@ class TMCLReply:
                            self.status, self.command, self.value, self.checksum)
 
     def __str__(self):
-        return "TMCL_Reply:   {0:02X},{1:02X},{2:02X},{3:02X},{4:08X},{5:02X}".format(
+        return "TMCL_Reply:   {0:02X},{1:02X},{2:02X},{3:02X}, {4}, {5:02X}".format(
             self.reply_address,
             self.module_address,
             self.status,
