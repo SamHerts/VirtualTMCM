@@ -110,6 +110,82 @@ class Trinamic6214:
     def __init__(self, tick_speed, motor_count):
         self.motor_array = [Trinamic5160(tick_speed, idx) for idx in range(motor_count)]
         self.motor_count = motor_count
+        self.global_parameter_bank_0 = {
+            TMCLGlobalParameter.GLOBAL_PARAM_BAUD_RATE: 8,
+            TMCLGlobalParameter.GLOBAL_PARAM_SERIAL_ADDRESS: 1,
+            TMCLGlobalParameter.GLOBAL_PARAM_SERIAL_HEARTBEAT: 0,
+            TMCLGlobalParameter.GLOBAL_PARAM_CAN_BIT_RATE: 8,
+            TMCLGlobalParameter.GLOBAL_PARAM_CAN_REPLY_ID: 0,
+            TMCLGlobalParameter.GLOBAL_PARAM_CAN_ID: 1,
+            TMCLGlobalParameter.GLOBAL_PARAM_TELEGRAM_PAUSE_TIME: 15,
+            TMCLGlobalParameter.GLOBAL_PARAM_SERIAL_HOST_ADDRESS: 0,
+            TMCLGlobalParameter.GLOBAL_PARAM_AUTO_START_MODE: 0,
+            TMCLGlobalParameter.GLOBAL_PARAM_TMCL_CODE_PROTECTION: 0,
+            TMCLGlobalParameter.GLOBAL_PARAM_CAN_HEARTBEAT: 0,
+            TMCLGlobalParameter.GLOBAL_PARAM_CAN_SECONDARY_ADDRESS: 0,
+            TMCLGlobalParameter.GLOBAL_PARAM_COORDINATE_STORAGE: 0,
+            TMCLGlobalParameter.GLOBAL_PARAM_DO_NOT_RESTORE_USER_VARIABLES: 0,
+            TMCLGlobalParameter.GLOBAL_PARAM_SERIAL_SECONDARY_ADDRESS: 0,
+            TMCLGlobalParameter.GLOBAL_PARAM_TMCL_APPLICATION_STATUS: 0,
+            TMCLGlobalParameter.GLOBAL_PARAM_DOWNLOAD_MODE: 0,
+            TMCLGlobalParameter.GLOBAL_PARAM_TMCL_PROGRAM_COUNTER: 0,
+            TMCLGlobalParameter.GLOBAL_PARAM_TMCL_TICK_TIMER: 0,
+            TMCLGlobalParameter.GLOBAL_PARAM_RANDOM_NUMBER: 0,
+            TMCLGlobalParameter.GLOBAL_PARAM_SUPPRESS_REPLY: 1
+        }
+
+        # TODO: Initialize all 3 banks
+        self.digital_input_bank_0 = {
+            TMCLDigitalInputs.AIN0: 0,
+            TMCLDigitalInputs.IN1: 0,
+            TMCLDigitalInputs.IN2: 0,
+            TMCLDigitalInputs.IN3: 0,
+            TMCLDigitalInputs.AIN4: 0,
+            TMCLDigitalInputs.IN5: 0,
+            TMCLDigitalInputs.IN6: 0,
+            TMCLDigitalInputs.IN7: 0,
+            TMCLDigitalInputs.STO: 0,
+            TMCLDigitalInputs.STO1: 0,
+            TMCLDigitalInputs.STO2: 0,
+        }
+
+    def move_to_position(self, command_type, axis, position):
+        if self.motor_count > axis >= 0:
+            status = TMCLStatus.SUCCESS
+        else:
+            status = TMCLStatus.WRONG_TYPE
+
+        if command_type not in [0, 1, 2]:
+            status = TMCLStatus.WRONG_TYPE
+
+        self.motor_array[axis].move_to_position(position)
+        self.send_response(TMCLReply(0, 0, status, TMCLCommand.MVP, 0))
+
+    def motor_stop(self, axis: int):
+        """
+        Stop the motor on the specified axis.
+        Args:
+            axis (int): The axis number.
+        Returns:
+            None
+        """
+        if self.motor_count > axis >= 0:
+            status = TMCLStatus.SUCCESS
+        else:
+            status = TMCLStatus.WRONG_TYPE
+        self.motor_array[axis].set_parameter(TMCLParameter.ACTUAL_SPEED, 0)
+        current_position = self.motor_array[axis].get_parameter(TMCLParameter.ACTUAL_POSITION)
+        self.motor_array[axis].set_parameter(TMCLParameter.TARGET_POSITION, current_position)
+        self.send_response(TMCLReply(0, 0, status, TMCLCommand.MST, 0))
+
+    def set_axis_parameter(self, parameter_number, axis, value):
+        self.motor_array[axis].set_parameter(parameter_number, value)
+        if self.motor_count > axis >= 0:
+            status = TMCLStatus.SUCCESS
+        else:
+            status = TMCLStatus.WRONG_TYPE
+
+        self.send_response(TMCLReply(0, 0, status, TMCLCommand.SAP, value))
 
     def move_to_position(self, idx, position):
         self.motor_array[idx].move_to_position(position)
