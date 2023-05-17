@@ -187,20 +187,41 @@ class Trinamic6214:
 
         self.send_response(TMCLReply(0, 0, status, TMCLCommand.SAP, value))
 
-    def move_to_position(self, idx, position):
-        self.motor_array[idx].move_to_position(position)
+    def get_axis_parameter(self, parameter_number, axis):
+        if self.motor_count > axis >= 0:
+            status = TMCLStatus.SUCCESS
+        else:
+            status = TMCLStatus.WRONG_TYPE
 
-    def motor_stop(self, idx):
-        self.motor_array[idx].set_parameter(TMCLParameter.AXIS_PARAM_ACTUAL_SPEED, 0)
+        value = self.motor_array[axis].get_parameter(parameter_number)
+        self.send_response(TMCLReply(0, 0, status, TMCLCommand.GAP, value))
 
-    def set_max_velocity(self, idx, velocity):
-        self.motor_array[idx].set_parameter(TMCLParameter.AXIS_PARAM_MAXIMUM_POSITIONING_SPEED, velocity)
+    def get_input(self, port, bank_number):
+        # TODO: Return based on bank_number
+        if 3 > bank_number >= 0:
+            status = TMCLStatus.SUCCESS
+        else:
+            status = TMCLStatus.WRONG_TYPE
 
-    def set_acceleration(self, idx, accel):
-        self.motor_array[idx].set_parameter(TMCLParameter.AXIS_PARAM_ACCELERATION_A1, accel)
+        value = self.digital_input_bank_0[port]
+        self.send_response(TMCLReply(0, 0, status, TMCLCommand.GAP, value))
 
-    def get_position(self, idx):
-        return self.motor_array[idx].get_parameter(TMCLParameter.AXIS_PARAM_ACTUAL_POSITION)
+    def process_command(self, request: TMCLRequest):
+        print(request)
+        match request.command:
+            case TMCLCommand.GAP:
+                self.get_axis_parameter(request.commandType, request.motorBank)
+            case TMCLCommand.SAP:
+                self.set_axis_parameter(request.commandType, request.motorBank, request.value)
+            case TMCLCommand.MST:
+                self.motor_stop(request.motorBank)
+            case TMCLCommand.GIO:
+                self.get_input(request.commandType, request.motorBank)
+            case TMCLCommand.MVP:
+                self.move_to_position(request.commandType, request.motorBank, request.value)
+
+    def send_response(self, response: TMCLReply):
+        print(response)
 
     def update(self):
         for motor in self.motor_array:
