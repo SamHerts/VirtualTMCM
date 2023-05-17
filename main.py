@@ -14,30 +14,22 @@ def comm_loop():
         command = input("Enter a command (move <motor> <distance>, gp <motor>, or exit): ")
         parts = command.split()
 
-        if not parts:
-            continue
-        elif parts[0] == 'move':
-            if len(parts) < 3:
-                print("Invalid command. Please provide a motor and/or distance.")
+        match parts:
+            case []:
                 continue
-
-            try:
-                distance = int(parts[2])
-                trinamic_6214.move_to_position(int(parts[1]), distance)
-                print("Moved motor by", distance)
-            except ValueError:
-                print("Invalid distance. Please provide an integer.")
-        elif parts[0] == 'gp':
-            if len(parts) < 2:
-                print("Invalid command. Please provide a motor.")
-                continue
-            print("Current position:", trinamic_6214.get_position(int(parts[1])))
-        elif parts[0] == 'exit':
-            print("Exiting...")
-            is_running = False
-            break
-        else:
-            print("Invalid command. Please try again.")
+            case [('MVP' | 'mvp'), motor_idx, position] if len(parts) >= 3:
+                trinamic_6214.process_command(TMCLRequest(0, TMCLCommand.MVP, 0, int(motor_idx), int(position)))
+            case [('GAP' | 'gap'), motor_idx] if len(parts) >= 2:
+                trinamic_6214.process_command(TMCLRequest(0, TMCLCommand.GAP, TMCLParameter.ACTUAL_POSITION, int(motor_idx), 0))
+            case [('exit' | 'quit')]:
+                print("Exiting...")
+                is_running = False
+                break
+            case [command, command_type, motor_bank, value] if len(parts) == 4:
+                request = TMCLRequest(0, int(command), int(command_type), int(motor_bank), int(value))
+                trinamic_6214.process_command(request)
+            case _:
+                print("Invalid command. Please try again.")
 
 
 def main():
