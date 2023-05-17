@@ -1,11 +1,13 @@
 from TMCL.tmcm import Trinamic6214
+from TMCL.tmcl import TMCLParameter, TMCLRequest, TMCLCommand
+
 from time import sleep
 from threading import Thread
 
 tick_speed = 100
 is_running = False
 
-trinamic_6214 = Trinamic6214(tick_speed, 3)
+trinamic_6214 = Trinamic6214(tick_speed, 1)
 
 
 def comm_loop():
@@ -46,7 +48,7 @@ def main():
 
     while is_running:
         trinamic_6214.update()
-        sleep(1 / tick_speed)
+        sleep(1)
 
     x.join()
 
