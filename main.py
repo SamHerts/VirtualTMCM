@@ -3,53 +3,74 @@ from TMCL.tmcl import TMCLParameter, TMCLRequest, TMCLCommand
 
 from time import sleep
 from threading import Thread
-
-tick_speed = 100
-is_running = False
-
-trinamic_6214 = Trinamic6214(tick_speed, 1)
+from serial import Serial
 
 
-def comm_loop():
-    global is_running
-    while is_running:
-        command = input("Enter a command (move <motor> <distance>, gp <motor>, or exit): ")
-        parts = command.split()
+class SerialClient:
+    def __init__(self) -> None:
+        self.thread_handle = None
+        self.write_serial = Serial()
+        self.read_serial = Serial()
+        self.is_running = False
+        self.rx_callback = None
 
-        match parts:
-            case []:
-                continue
-            case [('MVP' | 'mvp'), motor_idx, position] if len(parts) >= 3:
-                trinamic_6214.process_command(TMCLRequest(0, TMCLCommand.MVP, 0, int(motor_idx), int(position)))
-            case [('GAP' | 'gap'), motor_idx] if len(parts) >= 2:
-                trinamic_6214.process_command(TMCLRequest(0, TMCLCommand.GAP, TMCLParameter.ACTUAL_POSITION, int(motor_idx), 0))
-            case [('exit' | 'quit')]:
-                print("Exiting...")
-                is_running = False
-                break
-            case [command, command_type, motor_bank, value] if len(parts) == 4:
-                request = TMCLRequest(0, int(command), int(command_type), int(motor_bank), int(value))
-                trinamic_6214.process_command(request)
-            case _:
-                print("Invalid command. Please try again.")
+    def start(self, read_port, write_port, baud_rate, callback):
+        if self.is_running:
+            print("failed to connect! already connected!")
+            return
+        self.rx_callback = callback
+        self.write_serial.baudrate = baud_rate
+        self.read_serial.baudrate = baud_rate
+        self.write_serial.port = write_port
+        self.read_serial.port = read_port
+        self.thread_handle = Thread(target=self.server_thread)
+
+        try:
+            self.write_serial.open()
+            self.read_serial.open()
+        except TimeoutError as e:
+            print(e)
+            raise
+        if not self.thread_handle.is_alive():
+            self.thread_handle.start()
+
+    def stop(self):
+        self.is_running = False
+        self.write_serial.close()
+        self.read_serial.close()
+
+    def send(self, packet):
+        if not self.is_running:
+            return
+        self.write_serial.write(packet)
+
+    def server_thread(self):
+        self.is_running = True
+        print("Opening client thread")
+        try:
+            while self.is_running:
+                data = self.read_serial.readline(4096)
+                if len(data) > 0:
+                    self.rx_callback(data)
+        except ConnectionAbortedError:
+            print("Connection closed")
+        print("Closing client thread")
 
 
 def main():
-    global trinamic_6214
-    for idx in range(trinamic_6214.motor_count):
-        trinamic_6214.set_axis_parameter(TMCLParameter.ACCELERATION_A1, idx, 200)
-        trinamic_6214.set_axis_parameter(TMCLParameter.MAXIMUM_POSITIONING_SPEED, idx, 100)
+    client = SerialClient()
+    trinamic_6214 = Trinamic6214(tick_speed=100, motor_count=6, serial_port=client)
 
-    global is_running
-    is_running = True
-    x = Thread(target=comm_loop, daemon=True)
-    x.start()
+    client.start("/dev/pts/0", "/dev/pts/1", 115200, trinamic_6214.process_command)
 
-    while is_running:
-        trinamic_6214.update()
-        sleep(1)
+    try:
+        while True:
+            trinamic_6214.update()
+            sleep(1)
+    except KeyboardInterrupt:
+        pass
 
-    x.join()
+    client.stop()
 
 
 if __name__ == '__main__':

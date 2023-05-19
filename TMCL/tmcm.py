@@ -99,7 +99,7 @@ class Trinamic5160:
 
 
 class Trinamic6214:
-    def __init__(self, tick_speed, motor_count):
+    def __init__(self, tick_speed, motor_count, serial_port):
         self.motor_array = [Trinamic5160(tick_speed, idx) for idx in range(motor_count)]
         self.motor_count = motor_count
         self.global_parameter_bank_0 = {
@@ -125,6 +125,7 @@ class Trinamic6214:
             TMCLGlobalParameter.GLOBAL_PARAM_RANDOM_NUMBER: 0,
             TMCLGlobalParameter.GLOBAL_PARAM_SUPPRESS_REPLY: 1
         }
+        self.serial_port = serial_port
 
         # TODO: Initialize all 3 banks
         self.digital_input_bank_0 = {
@@ -214,6 +215,7 @@ class Trinamic6214:
 
     def send_response(self, response: TMCLReply):
         print(response)
+        self.serial_port.write(response)
 
     def update(self):
         for motor in self.motor_array:
