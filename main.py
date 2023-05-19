@@ -5,6 +5,9 @@ from time import sleep
 from threading import Thread
 from serial import Serial
 
+read_port = "/dev/pts/5"
+write_port = "/dev/pts/6"
+
 
 class SerialClient:
     def __init__(self) -> None:
@@ -58,10 +61,12 @@ class SerialClient:
 
 
 def main():
+    global read_port
+    global write_port
     client = SerialClient()
     trinamic_6214 = Trinamic6214(tick_speed=100, motor_count=6, serial_port=client)
 
-    client.start("/dev/pts/0", "/dev/pts/1", 115200, trinamic_6214.process_command)
+    client.start(read_port, write_port, 115200, trinamic_6214.process_command)
 
     try:
         while True:

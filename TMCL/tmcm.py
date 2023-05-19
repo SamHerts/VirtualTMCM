@@ -199,8 +199,12 @@ class Trinamic6214:
         value = self.digital_input_bank_0[port]
         self.send_response(TMCLReply(0, 0, status, TMCLCommand.GAP, value))
 
-    def process_command(self, request: TMCLRequest):
-        print(request)
+    def process_command(self, input_bytes: bytes):
+        print(f'{input_bytes=}\n\n')
+        request = TMCLRequest.from_buffer(input_bytes)
+        # \x00\x05\x8c\x03\x00\x00\x00\x08\x9c
+        # \x00\x05\x01\x03\x00\x00\x00\x00\t
+
         match request.command:
             case TMCLCommand.GAP:
                 self.get_axis_parameter(request.commandType, request.motorBank)
