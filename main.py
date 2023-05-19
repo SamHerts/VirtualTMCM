@@ -5,32 +5,27 @@ from time import sleep
 from threading import Thread
 from serial import Serial
 
-read_port = "/dev/pts/5"
-write_port = "/dev/pts/6"
+serial_port_fd = "/dev/pts/5"
 
 
 class SerialClient:
     def __init__(self) -> None:
         self.thread_handle = None
-        self.write_serial = Serial()
-        self.read_serial = Serial()
+        self.serial_port = Serial()
         self.is_running = False
         self.rx_callback = None
 
-    def start(self, read_port, write_port, baud_rate, callback):
+    def start(self, port_fd, baud_rate, callback):
         if self.is_running:
             print("failed to connect! already connected!")
             return
         self.rx_callback = callback
-        self.write_serial.baudrate = baud_rate
-        self.read_serial.baudrate = baud_rate
-        self.write_serial.port = write_port
-        self.read_serial.port = read_port
+        self.serial_port.baudrate = baud_rate
+        self.serial_port.port = port_fd
         self.thread_handle = Thread(target=self.server_thread)
 
         try:
-            self.write_serial.open()
-            self.read_serial.open()
+            self.serial_port.open()
         except TimeoutError as e:
             print(e)
             raise
@@ -39,20 +34,19 @@ class SerialClient:
 
     def stop(self):
         self.is_running = False
-        self.write_serial.close()
-        self.read_serial.close()
+        self.serial_port.close()
 
     def send(self, packet):
         if not self.is_running:
             return
-        self.write_serial.write(packet)
+        self.serial_port.write(packet)
 
     def server_thread(self):
         self.is_running = True
         print("Opening client thread")
         try:
             while self.is_running:
-                data = self.read_serial.readline(4096)
+                data = self.serial_port.readline(9)
                 if len(data) > 0:
                     self.rx_callback(data)
         except ConnectionAbortedError:
@@ -61,12 +55,11 @@ class SerialClient:
 
 
 def main():
-    global read_port
-    global write_port
+    global serial_port_fd
     client = SerialClient()
     trinamic_6214 = Trinamic6214(tick_speed=100, motor_count=6, serial_port=client)
 
-    client.start(read_port, write_port, 115200, trinamic_6214.process_command)
+    client.start(serial_port_fd, 115200, trinamic_6214.process_command)
 
     try:
         while True:

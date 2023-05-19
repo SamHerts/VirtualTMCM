@@ -201,6 +201,9 @@ class Trinamic6214:
 
     def process_command(self, input_bytes: bytes):
         print(f'{input_bytes=}\n\n')
+        if len(input_bytes) != 9:
+            print("Length of input too long/short")
+            return
         request = TMCLRequest.from_buffer(input_bytes)
         # \x00\x05\x8c\x03\x00\x00\x00\x08\x9c
         # \x00\x05\x01\x03\x00\x00\x00\x00\t
@@ -219,7 +222,7 @@ class Trinamic6214:
 
     def send_response(self, response: TMCLReply):
         print(response)
-        self.serial_port.write(response)
+        self.serial_port.send(response.to_buffer())
 
     def update(self):
         for motor in self.motor_array:
