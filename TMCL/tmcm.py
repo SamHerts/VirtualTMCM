@@ -1,4 +1,5 @@
-from TMCL.tmcl import TMCLParameter, TMCLStatus, TMCLReply, TMCLRequest, TMCLGlobalParameter, TMCLDigitalInputs, TMCLCommand
+from TMCL.tmcl import TMCLParameter, TMCLStatus, TMCLReply, TMCLRequest, TMCLGlobalParameter, TMCLDigitalInputs, \
+    TMCLCommand
 
 
 class Trinamic5160:
@@ -142,7 +143,15 @@ class Trinamic6214:
             TMCLDigitalInputs.STO2: 0,
         }
 
-    def move_to_position(self, command_type, axis, position):
+    def set_global_parameter(self, parameter_number: TMCLParameter, value: int) -> TMCLReply:
+        self.global_parameter_bank_0[parameter_number] = value
+        return TMCLReply(0, 0, TMCLStatus.SUCCESS, TMCLCommand.SGP, 0)
+
+    def get_global_parameter(self, parameter_number: TMCLParameter) -> TMCLReply:
+        value = self.global_parameter_bank_0[parameter_number]
+        return TMCLReply(0, 0, TMCLStatus.SUCCESS, TMCLCommand.GGP, value)
+
+    def move_to_position(self, command_type: int, axis: int, position: int) -> TMCLReply:
         if self.motor_count > axis >= 0:
             status = TMCLStatus.SUCCESS
         else:
@@ -152,15 +161,15 @@ class Trinamic6214:
             status = TMCLStatus.WRONG_TYPE
 
         self.motor_array[axis].move_to_position(position)
-        self.send_response(TMCLReply(0, 0, status, TMCLCommand.MVP, 0))
+        return TMCLReply(0, 0, status, TMCLCommand.MVP, 0)
 
-    def motor_stop(self, axis: int):
+    def motor_stop(self, axis: int) -> TMCLReply:
         """
         Stop the motor on the specified axis.
         Args:
             axis (int): The axis number.
         Returns:
-            None
+            TMCLReply
         """
         if self.motor_count > axis >= 0:
             status = TMCLStatus.SUCCESS
@@ -169,27 +178,27 @@ class Trinamic6214:
         self.motor_array[axis].set_parameter(TMCLParameter.ACTUAL_SPEED, 0)
         current_position = self.motor_array[axis].get_parameter(TMCLParameter.ACTUAL_POSITION)
         self.motor_array[axis].set_parameter(TMCLParameter.TARGET_POSITION, current_position)
-        self.send_response(TMCLReply(0, 0, status, TMCLCommand.MST, 0))
+        return TMCLReply(0, 0, status, TMCLCommand.MST, 0)
 
-    def set_axis_parameter(self, parameter_number, axis, value):
+    def set_axis_parameter(self, parameter_number: TMCLParameter, axis: int, value: int) -> TMCLReply:
         self.motor_array[axis].set_parameter(parameter_number, value)
         if self.motor_count > axis >= 0:
             status = TMCLStatus.SUCCESS
         else:
             status = TMCLStatus.WRONG_TYPE
 
-        self.send_response(TMCLReply(0, 0, status, TMCLCommand.SAP, value))
+        return TMCLReply(0, 0, status, TMCLCommand.SAP, value)
 
-    def get_axis_parameter(self, parameter_number, axis):
+    def get_axis_parameter(self, parameter_number: TMCLParameter, axis: int) -> TMCLReply:
         if self.motor_count > axis >= 0:
             status = TMCLStatus.SUCCESS
         else:
             status = TMCLStatus.WRONG_TYPE
 
         value = self.motor_array[axis].get_parameter(parameter_number)
-        self.send_response(TMCLReply(0, 0, status, TMCLCommand.GAP, value))
+        return TMCLReply(0, 0, status, TMCLCommand.GAP, value)
 
-    def get_input(self, port, bank_number):
+    def get_input(self, port: int, bank_number: int) -> TMCLReply:
         # TODO: Return based on bank_number
         if 3 > bank_number >= 0:
             status = TMCLStatus.SUCCESS
@@ -197,33 +206,40 @@ class Trinamic6214:
             status = TMCLStatus.WRONG_TYPE
 
         value = self.digital_input_bank_0[port]
-        self.send_response(TMCLReply(0, 0, status, TMCLCommand.GAP, value))
+        return TMCLReply(0, 0, status, TMCLCommand.GAP, value)
 
-    def process_command(self, input_bytes: bytes):
-        print(f'{input_bytes=}\n\n')
+    def process_command(self, input_bytes: bytes) -> None:
         if len(input_bytes) != 9:
             print("Length of input too long/short")
             return
         request = TMCLRequest.from_buffer(input_bytes)
-        # \x00\x05\x8c\x03\x00\x00\x00\x08\x9c
-        # \x00\x05\x01\x03\x00\x00\x00\x00\t
+        print(request)
 
         match request.command:
             case TMCLCommand.GAP:
-                self.get_axis_parameter(request.commandType, request.motorBank)
+                response_result = self.get_axis_parameter(request.commandType, request.motorBank)
             case TMCLCommand.SAP:
-                self.set_axis_parameter(request.commandType, request.motorBank, request.value)
+                response_result = self.set_axis_parameter(request.commandType, request.motorBank, request.value)
             case TMCLCommand.MST:
-                self.motor_stop(request.motorBank)
+                response_result = self.motor_stop(request.motorBank)
             case TMCLCommand.GIO:
-                self.get_input(request.commandType, request.motorBank)
+                response_result = self.get_input(request.commandType, request.motorBank)
             case TMCLCommand.MVP:
-                self.move_to_position(request.commandType, request.motorBank, request.value)
+                response_result = self.move_to_position(request.commandType, request.motorBank, request.value)
+            case TMCLCommand.SGP:
+                response_result = self.set_global_parameter(request.commandType, request.value)
+            case TMCLCommand.GGP:
+                response_result = self.get_global_parameter(request.commandType)
+            case _:
+                print("Received invalid command")
+                response_result = TMCLReply(0, 0, TMCLStatus.INVALID_COMMAND, 0, 0)
 
-    def send_response(self, response: TMCLReply):
+        self.send_response(response_result)
+
+    def send_response(self, response: TMCLReply) -> None:
         print(response)
         self.serial_port.send(response.to_buffer())
 
-    def update(self):
+    def update(self) -> None:
         for motor in self.motor_array:
             motor.update()
