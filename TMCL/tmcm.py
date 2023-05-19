@@ -1,4 +1,4 @@
-from tmcl import TMCLParameter, TMCLStatus, TMCLReply, TMCLRequest, TMCLGlobalParameter, TMCLDigitalInputs, TMCLCommand
+from TMCL.tmcl import TMCLParameter, TMCLStatus, TMCLReply, TMCLRequest, TMCLGlobalParameter, TMCLDigitalInputs, TMCLCommand
 
 
 class Trinamic5160:
