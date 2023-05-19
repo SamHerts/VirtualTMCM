@@ -3,7 +3,7 @@ from TMCL.tmcl import TMCLParameter, TMCLStatus, TMCLReply, TMCLRequest, TMCLGlo
 
 
 class Trinamic5160:
-    def __init__(self, tick_speed, identity):
+    def __init__(self, tick_speed, identity, negative_hard_stop, positive_hard_stop):
         self.identity = identity
         self.parameters = {
             TMCLParameter.TARGET_POSITION: 0,
@@ -41,6 +41,8 @@ class Trinamic5160:
 
         self.tick_speed = tick_speed
         self.direction_is_forward = True
+        self.negative_hard_stop = negative_hard_stop
+        self.positive_hard_stop = positive_hard_stop
 
     def __str__(self):
         return f"TMC5160.{self.identity}"
@@ -53,7 +55,11 @@ class Trinamic5160:
 
     def get_parameter(self, param: TMCLParameter) -> int:
         if param in self.parameters:
-            return self.parameters[param]
+            value = self.parameters[param]
+            if param == TMCLParameter.AXIS_PARAM_EXTENDED_ERROR_FLAGS:
+                # Clear the error flag on read
+                self.parameters[param] = 0
+            return value
         else:
             raise ValueError("Invalid parameter.")
 
@@ -62,6 +68,11 @@ class Trinamic5160:
         actual_position = self.get_parameter(TMCLParameter.ACTUAL_POSITION)
 
         self.direction_is_forward = True if (target_position - actual_position) >= 0 else False
+
+    def motor_stop(self):
+        self.set_parameter(TMCLParameter.ACTUAL_SPEED, 0)
+        current_position = self.get_parameter(TMCLParameter.ACTUAL_POSITION)
+        self.set_parameter(TMCLParameter.TARGET_POSITION, current_position)
 
     def update(self):
         # Update the position
@@ -83,20 +94,30 @@ class Trinamic5160:
 
             self.set_parameter(TMCLParameter.POSITION_REACHED_FLAG, 0)
             actual_position = actual_position + actual_velocity
-            # Check if we go past
+
+            # Check if we go past the target or hard stop
             if self.direction_is_forward:
                 if actual_position > target_position:
                     actual_position = target_position
+                elif actual_position >= self.positive_hard_stop:
+                    print("Hit the Positive Hard Stop")
+                    self.set_parameter(TMCLParameter.AXIS_PARAM_EXTENDED_ERROR_FLAGS, 2)
+                    self.motor_stop()
             else:
+
                 if actual_position < target_position:
                     actual_position = target_position
+                elif actual_position <= self.negative_hard_stop:
+                    print("Hit the Negative Hard Stop")
+                    self.set_parameter(TMCLParameter.AXIS_PARAM_EXTENDED_ERROR_FLAGS, 2)
+                    self.motor_stop()
 
             self.set_parameter(TMCLParameter.ACTUAL_POSITION, int(actual_position))
             self.set_parameter(TMCLParameter.ENCODER_POSITION, int(actual_position))
 
         else:
             self.set_parameter(TMCLParameter.POSITION_REACHED_FLAG, 1)
-            self.set_parameter(TMCLParameter.ACTUAL_SPEED, 0)
+            self.motor_stop()
 
 
 class Trinamic6214:
@@ -163,6 +184,46 @@ class Trinamic6214:
         self.motor_array[axis].move_to_position(position)
         return TMCLReply(0, 0, status, TMCLCommand.MVP, 0)
 
+    def rotate_left(self, command_type: int, axis: int, velocity: int):
+        """
+        Decreases the position counter at a desired velocity
+        :param command_type:
+        :param axis:
+        :param velocity:
+        :return:
+        """
+        if self.motor_count > axis >= 0:
+            status = TMCLStatus.SUCCESS
+        else:
+            status = TMCLStatus.WRONG_TYPE
+
+        if command_type not in [0, 1, 2]:
+            status = TMCLStatus.WRONG_TYPE
+
+        self.motor_array[axis].set_parameter(TMCLParameter.MAXIMUM_POSITIONING_SPEED, velocity)
+        self.motor_array[axis].move_to_position(-500000)
+        return TMCLReply(0, 0, status, TMCLCommand.MVP, 0)
+
+    def rotate_right(self, command_type: int, axis: int, velocity: int):
+        """
+        Increases the position counter at a desired velocity
+        :param command_type:
+        :param axis:
+        :param velocity:
+        :return:
+        """
+        if self.motor_count > axis >= 0:
+            status = TMCLStatus.SUCCESS
+        else:
+            status = TMCLStatus.WRONG_TYPE
+
+        if command_type not in [0, 1, 2]:
+            status = TMCLStatus.WRONG_TYPE
+
+        self.motor_array[axis].set_parameter(TMCLParameter.MAXIMUM_POSITIONING_SPEED, velocity)
+        self.motor_array[axis].move_to_position(500000)
+        return TMCLReply(0, 0, status, TMCLCommand.MVP, 0)
+
     def motor_stop(self, axis: int) -> TMCLReply:
         """
         Stop the motor on the specified axis.
@@ -175,9 +236,7 @@ class Trinamic6214:
             status = TMCLStatus.SUCCESS
         else:
             status = TMCLStatus.WRONG_TYPE
-        self.motor_array[axis].set_parameter(TMCLParameter.ACTUAL_SPEED, 0)
-        current_position = self.motor_array[axis].get_parameter(TMCLParameter.ACTUAL_POSITION)
-        self.motor_array[axis].set_parameter(TMCLParameter.TARGET_POSITION, current_position)
+        self.motor_array[axis].motor_stop()
         return TMCLReply(0, 0, status, TMCLCommand.MST, 0)
 
     def set_axis_parameter(self, parameter_number: TMCLParameter, axis: int, value: int) -> TMCLReply:
@@ -195,7 +254,11 @@ class Trinamic6214:
         else:
             status = TMCLStatus.WRONG_TYPE
 
-        value = self.motor_array[axis].get_parameter(parameter_number)
+        try:
+            value = self.motor_array[axis].get_parameter(parameter_number)
+        except ValueError:
+            return TMCLReply(0, 0, TMCLStatus.INVALID_VALUE, TMCLCommand.GAP, 4)
+
         return TMCLReply(0, 0, status, TMCLCommand.GAP, value)
 
     def get_input(self, port: int, bank_number: int) -> TMCLReply:
@@ -230,6 +293,8 @@ class Trinamic6214:
                 response_result = self.set_global_parameter(request.commandType, request.value)
             case TMCLCommand.GGP:
                 response_result = self.get_global_parameter(request.commandType)
+            case TMCLCommand.ROL:
+                response_result = self.rotate_left(request.commandType, request.motorBank, request.value)
             case _:
                 print("Received invalid command")
                 response_result = TMCLReply(0, 0, TMCLStatus.INVALID_COMMAND, 0, 0)
