@@ -10,7 +10,7 @@ class Trinamic5160:
             TMCLParameter.ACTUAL_POSITION: 0,
             TMCLParameter.ACTUAL_SPEED: 0,
             TMCLParameter.MAXIMUM_POSITIONING_SPEED: 0,
-            TMCLParameter.MAXIMUM_ACCELERATION: 0,
+            TMCLParameter.MAXIMUM_ACCELERATION: 100,
             TMCLParameter.ABSOLUTE_MAX_CURRENT: 0,
             TMCLParameter.STANDBY_CURRENT: 0,
             TMCLParameter.POSITION_REACHED_FLAG: 0,
@@ -49,6 +49,7 @@ class Trinamic5160:
 
     def set_parameter(self, param: TMCLParameter, value: int) -> None:
         if param in self.parameters:
+            print(f"{param=}, {value=}")
             self.parameters[param] = value
         else:
             raise ValueError("Invalid parameter.")
@@ -82,11 +83,14 @@ class Trinamic5160:
         maximum_velocity = self.get_parameter(TMCLParameter.MAXIMUM_POSITIONING_SPEED)
         acceleration = self.get_parameter(TMCLParameter.ACCELERATION_A1)
 
+        print(f"{actual_position=}, {target_position=},\n{actual_velocity=}, {maximum_velocity=},\n{acceleration=}")
+
         direction_sign = 1 if self.direction_is_forward else -1
 
         if target_position != actual_position:
             if abs(actual_velocity) <= maximum_velocity:
                 actual_velocity = actual_velocity + ((acceleration / self.tick_speed) * direction_sign)
+                print(f"Increasing Velocity: {actual_velocity}")
                 if abs(actual_velocity) > maximum_velocity:
                     actual_velocity = maximum_velocity * direction_sign
 
@@ -193,27 +197,6 @@ class Trinamic6214:
         :param velocity:
         :return:
         """
-        print("Rotate Right")
-        if self.motor_count > axis >= 0:
-            status = TMCLStatus.SUCCESS
-        else:
-            status = TMCLStatus.WRONG_TYPE
-
-        if command_type not in [0, 1, 2]:
-            status = TMCLStatus.WRONG_TYPE
-
-        self.motor_array[axis].set_parameter(TMCLParameter.MAXIMUM_POSITIONING_SPEED, velocity)
-        self.motor_array[axis].move_to_position(-500000)
-        return TMCLReply(0, 0, status, TMCLCommand.MVP, 0)
-
-    def rotate_right(self, command_type: int, axis: int, velocity: int):
-        """
-        Increases the position counter at a desired velocity
-        :param command_type:
-        :param axis:
-        :param velocity:
-        :return:
-        """
         print("Rotate Left")
         if self.motor_count > axis >= 0:
             status = TMCLStatus.SUCCESS
@@ -224,8 +207,29 @@ class Trinamic6214:
             status = TMCLStatus.WRONG_TYPE
 
         self.motor_array[axis].set_parameter(TMCLParameter.MAXIMUM_POSITIONING_SPEED, velocity)
+        self.motor_array[axis].move_to_position(-5000)
+        return TMCLReply(0, 0, status, TMCLCommand.ROL, 0)
+
+    def rotate_right(self, command_type: int, axis: int, velocity: int):
+        """
+        Increases the position counter at a desired velocity
+        :param command_type:
+        :param axis:
+        :param velocity:
+        :return:
+        """
+        print("Rotate Right")
+        if self.motor_count > axis >= 0:
+            status = TMCLStatus.SUCCESS
+        else:
+            status = TMCLStatus.WRONG_TYPE
+
+        if command_type not in [0, 1, 2]:
+            status = TMCLStatus.WRONG_TYPE
+
+        self.motor_array[axis].set_parameter(TMCLParameter.MAXIMUM_POSITIONING_SPEED, velocity)
         self.motor_array[axis].move_to_position(500000)
-        return TMCLReply(0, 0, status, TMCLCommand.MVP, 0)
+        return TMCLReply(0, 0, status, TMCLCommand.ROR, 0)
 
     def motor_stop(self, axis: int) -> TMCLReply:
         """
