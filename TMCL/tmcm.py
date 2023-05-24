@@ -173,6 +173,7 @@ class Trinamic6214:
         return TMCLReply(0, 0, TMCLStatus.SUCCESS, TMCLCommand.GGP, value)
 
     def move_to_position(self, command_type: int, axis: int, position: int) -> TMCLReply:
+        print("Move To Position")
         if self.motor_count > axis >= 0:
             status = TMCLStatus.SUCCESS
         else:
@@ -192,6 +193,7 @@ class Trinamic6214:
         :param velocity:
         :return:
         """
+        print("Rotate Right")
         if self.motor_count > axis >= 0:
             status = TMCLStatus.SUCCESS
         else:
@@ -212,6 +214,7 @@ class Trinamic6214:
         :param velocity:
         :return:
         """
+        print("Rotate Left")
         if self.motor_count > axis >= 0:
             status = TMCLStatus.SUCCESS
         else:
@@ -232,6 +235,7 @@ class Trinamic6214:
         Returns:
             TMCLReply
         """
+        print("Motor Stop")
         if self.motor_count > axis >= 0:
             status = TMCLStatus.SUCCESS
         else:
@@ -240,6 +244,7 @@ class Trinamic6214:
         return TMCLReply(0, 0, status, TMCLCommand.MST, 0)
 
     def set_axis_parameter(self, parameter_number: TMCLParameter, axis: int, value: int) -> TMCLReply:
+        print("Set Axis Parameter")
         self.motor_array[axis].set_parameter(parameter_number, value)
         if self.motor_count > axis >= 0:
             status = TMCLStatus.SUCCESS
@@ -249,6 +254,7 @@ class Trinamic6214:
         return TMCLReply(0, 0, status, TMCLCommand.SAP, value)
 
     def get_axis_parameter(self, parameter_number: TMCLParameter, axis: int) -> TMCLReply:
+        print("Get Axis Parameter")
         if self.motor_count > axis >= 0:
             status = TMCLStatus.SUCCESS
         else:
