@@ -24,6 +24,7 @@ class Trinamic5160:
             TMCLParameter.AXIS_PARAM_RELATIVE_POSITIONING_OPTION: 0,
             TMCLParameter.AXIS_PARAM_MICROSTEP_RESOLUTION: 8,
             TMCLParameter.AXIS_PARAM_CHOPPER_OFF_TIME: 0,
+            TMCLParameter.AXIS_PARAM_ACTUAL_POWER: 0,
             TMCLParameter.AXIS_PARAM_LATCHED_POSITION: 0,
             TMCLParameter.AXIS_PARAM_LATCHED_ENCODER: 0,
             TMCLParameter.AXIS_PARAM_ENCODER_MODE: 0,
