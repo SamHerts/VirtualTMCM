@@ -3,7 +3,7 @@ from TMCL.tmcl import TMCLParameter, TMCLStatus, TMCLReply, TMCLRequest, TMCLGlo
 
 
 class Trinamic5160:
-    def __init__(self, tick_speed, identity, negative_hard_stop, positive_hard_stop):
+    def __init__(self, tick_speed, identity, negative_hard_stop=-400, positive_hard_stop=400000):
         self.identity = identity
         self.parameters = {
             TMCLParameter.TARGET_POSITION: 0,
