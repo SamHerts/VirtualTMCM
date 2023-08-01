@@ -84,7 +84,7 @@ class Trinamic5160:
         maximum_velocity = self.get_parameter(TMCLParameter.MAXIMUM_POSITIONING_SPEED)
         acceleration = self.get_parameter(TMCLParameter.MAXIMUM_ACCELERATION)
 
-        print(f"{actual_position=}, {target_position=},\n{actual_velocity=}, {maximum_velocity=},\n{acceleration=}")
+        # print(f"{actual_position=}, {target_position=},\n{actual_velocity=}, {maximum_velocity=},\n{acceleration=}")
 
         direction_sign = 1 if self.direction_is_forward else -1
 
