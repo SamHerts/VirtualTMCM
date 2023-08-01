@@ -95,6 +95,15 @@ class TMCLCommand:
     BOOT_WRITE_LENGTH = 208
     BOOT = 242
 
+    messages = {
+        1: "ROR",
+        2: "ROL",
+        3: "MST",
+        4: "MVP",
+        5: "SAP",
+        6: "GAP",
+    }
+
 
 class TMCLParameter:
     TARGET_POSITION = 0
@@ -184,7 +193,8 @@ class TMCLStatus:
         3: "Wrong Type",
         4: "Invalid Value",
         5: "EEPROM Locked",
-        6: "Command not Available"
+        6: "Command not Available",
+        100: "Success"
     }
 
 
@@ -214,9 +224,8 @@ class TMCLRequest:
                            self.commandType, self.motorBank, self.value, self.checksum)
 
     def __str__(self):
-        return "TMCL_Request: {0:02X},{1:02X},{2:02X},{3:02X}, {4}, {5:02X}".format(
-            self.moduleAddress,
-            self.command,
+        return "TMCL_Request: {0},{1:02X},{2:02X}, {3}, {4:02X}".format(
+            TMCLCommand.messages[self.command] if self.command in TMCLCommand.messages else self.command,
             self.commandType,
             self.motorBank,
             self.value,
@@ -254,11 +263,9 @@ class TMCLReply:
                            self.status, self.command, self.value, self.checksum)
 
     def __str__(self):
-        return "TMCL_Reply:   {0:02X},{1:02X},{2:02X},{3:02X}, {4}, {5:02X}".format(
-            self.reply_address,
-            self.module_address,
-            self.status,
-            self.command,
+        return "TMCL_Reply:  {0}, {1}, {2}, {3:02X}".format(
+            TMCLStatus.messages[self.status],
+            TMCLCommand.messages[self.command] if self.command in TMCLCommand.messages else self.command,
             self.value,
             self.checksum
         )

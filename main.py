@@ -5,7 +5,8 @@ from time import sleep
 from threading import Thread
 from serial import Serial
 
-serial_port_fd = "/dev/pts/5"
+# Created from `socat -d -d pty,link=/home/pi/ttyV1,raw,echo=0 pty,link=/home/pi/ttyV2,raw,echo=0`
+serial_port_fd = "/home/pi/ttyV1"
 
 
 class SerialClient:
