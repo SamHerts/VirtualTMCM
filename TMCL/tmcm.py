@@ -50,7 +50,7 @@ class Trinamic5160:
 
     def set_parameter(self, param: TMCLParameter, value: int) -> None:
         if param in self.parameters:
-            print(f"{param=}, {value=}")
+            # print(f"{param=}, {value=}")
             self.parameters[param] = value
         else:
             raise ValueError("Invalid parameter.")
@@ -89,7 +89,7 @@ class Trinamic5160:
         direction_sign = 1 if self.direction_is_forward else -1
 
         if target_position != actual_position:
-            print(f"{actual_position=}, {target_position=},\n{actual_velocity=}, {maximum_velocity=},\n{acceleration=}\n\n")
+            # print(f"{actual_position=}, {target_position=},\n{actual_velocity=}, {maximum_velocity=},\n{acceleration=}\n\n")
             if abs(actual_velocity) <= maximum_velocity:
                 actual_velocity = actual_velocity + ((acceleration / self.tick_speed) * direction_sign)
                 print(f"Increasing Velocity: {actual_velocity}")
